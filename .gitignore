@@ -1,0 +1,8 @@
+# ===== IDE（JetBrains / IntelliJ 系列，整目录忽略）=====
+.idea/
+*.iml
+*.iws
+
+# ===== 操作系统垃圾 =====
+.DS_Store
+Thumbs.db
