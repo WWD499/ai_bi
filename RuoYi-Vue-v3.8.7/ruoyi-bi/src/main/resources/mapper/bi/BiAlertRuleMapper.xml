@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.bi.mapper.BiAlertRuleMapper">
+
+    <resultMap type="com.ruoyi.bi.domain.BiAlertRule" id="BiAlertRuleResult">
+        <result property="id"                 column="id"                  />
+        <result property="name"               column="name"                />
+        <result property="datasourceId"       column="datasource_id"       />
+        <result property="tableName"          column="table_name"          />
+        <result property="metricField"        column="metric_field"        />
+        <result property="conditionSql"       column="condition_sql"       />
+        <result property="thresholdValue"     column="threshold_value"     />
+        <result property="comparisonOperator" column="comparison_operator" />
+        <result property="checkInterval"      column="check_interval"      />
+        <result property="notifyType"         column="notify_type"         />
+        <result property="notifyTarget"       column="notify_target"       />
+        <result property="status"             column="status"              />
+        <result property="analysisEnabled"    column="analysis_enabled"    />
+        <result property="lastCheckTime"      column="last_check_time"     />
+        <result property="lastAlertTime"      column="last_alert_time"     />
+        <result property="createBy"           column="create_by"           />
+        <result property="createTime"         column="create_time"         />
+        <result property="updateBy"           column="update_by"           />
+        <result property="updateTime"         column="update_time"         />
+        <result property="remark"             column="remark"              />
+    </resultMap>
+
+    <sql id="selectBiAlertRuleVo">
+        SELECT id, name, datasource_id, table_name, metric_field, condition_sql,
+               threshold_value, comparison_operator, check_interval,
+               notify_type, notify_target, status, analysis_enabled,
+               last_check_time, last_alert_time,
+               create_by, create_time, update_by, update_time, remark
+        FROM bi_alert_config
+    </sql>
+
+    <select id="selectBiAlertRuleList" parameterType="com.ruoyi.bi.domain.BiAlertRule" resultMap="BiAlertRuleResult">
+        <include refid="selectBiAlertRuleVo"/>
+        <where>
+            <if test="name != null and name != ''">AND name LIKE '%' || #{name} || '%'</if>
+            <if test="tableName != null and tableName != ''">AND table_name = #{tableName}</if>
+            <if test="status != null">AND status = #{status}</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectBiAlertRuleById" parameterType="Long" resultMap="BiAlertRuleResult">
+        <include refid="selectBiAlertRuleVo"/>
+        WHERE id = #{id}
+    </select>
+
+    <select id="selectEnabledRules" resultMap="BiAlertRuleResult">
+        <include refid="selectBiAlertRuleVo"/>
+        WHERE status = 1
+        ORDER BY last_check_time ASC NULLS FIRST
+    </select>
+
+    <insert id="insertBiAlertRule" parameterType="com.ruoyi.bi.domain.BiAlertRule" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO bi_alert_config
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="name != null and name != ''">name,</if>
+            <if test="datasourceId != null">datasource_id,</if>
+            <if test="tableName != null and tableName != ''">table_name,</if>
+            <if test="metricField != null and metricField != ''">metric_field,</if>
+            <if test="conditionSql != null and conditionSql != ''">condition_sql,</if>
+            <if test="thresholdValue != null">threshold_value,</if>
+            <if test="comparisonOperator != null and comparisonOperator != ''">comparison_operator,</if>
+            <if test="checkInterval != null">check_interval,</if>
+            <if test="notifyType != null and notifyType != ''">notify_type,</if>
+            <if test="notifyTarget != null and notifyTarget != ''">notify_target,</if>
+            <if test="status != null">status,</if>
+            <if test="analysisEnabled != null">analysis_enabled,</if>
+            <if test="remark != null and remark != ''">remark,</if>
+            <if test="createBy != null and createBy != ''">create_by,</if>
+            create_time
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            <if test="name != null and name != ''">#{name},</if>
+            <if test="datasourceId != null">#{datasourceId},</if>
+            <if test="tableName != null and tableName != ''">#{tableName},</if>
+            <if test="metricField != null and metricField != ''">#{metricField},</if>
+            <if test="conditionSql != null and conditionSql != ''">#{conditionSql},</if>
+            <if test="thresholdValue != null">#{thresholdValue},</if>
+            <if test="comparisonOperator != null and comparisonOperator != ''">#{comparisonOperator},</if>
+            <if test="checkInterval != null">#{checkInterval},</if>
+            <if test="notifyType != null and notifyType != ''">#{notifyType},</if>
+            <if test="notifyTarget != null and notifyTarget != ''">#{notifyTarget},</if>
+            <if test="status != null">#{status},</if>
+            <if test="analysisEnabled != null">#{analysisEnabled},</if>
+            <if test="remark != null and remark != ''">#{remark},</if>
+            <if test="createBy != null and createBy != ''">#{createBy},</if>
+            NOW()
+        </trim>
+    </insert>
+
+    <update id="updateBiAlertRule" parameterType="com.ruoyi.bi.domain.BiAlertRule">
+        UPDATE bi_alert_config
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="name != null and name != ''">name = #{name},</if>
+            <if test="datasourceId != null">datasource_id = #{datasourceId},</if>
+            <if test="tableName != null and tableName != ''">table_name = #{tableName},</if>
+            <if test="metricField != null and metricField != ''">metric_field = #{metricField},</if>
+            <if test="conditionSql != null and conditionSql != ''">condition_sql = #{conditionSql},</if>
+            <if test="thresholdValue != null">threshold_value = #{thresholdValue},</if>
+            <if test="comparisonOperator != null and comparisonOperator != ''">comparison_operator = #{comparisonOperator},</if>
+            <if test="checkInterval != null">check_interval = #{checkInterval},</if>
+            <if test="notifyType != null and notifyType != ''">notify_type = #{notifyType},</if>
+            <if test="notifyTarget != null and notifyTarget != ''">notify_target = #{notifyTarget},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="analysisEnabled != null">analysis_enabled = #{analysisEnabled},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            <if test="updateBy != null and updateBy != ''">update_by = #{updateBy},</if>
+            update_time = NOW()
+        </trim>
+        WHERE id = #{id}
+    </update>
+
+    <update id="updateLastCheckTime">
+        UPDATE bi_alert_config SET last_check_time = #{lastCheckTime} WHERE id = #{id}
+    </update>
+
+    <update id="updateLastAlertTime">
+        UPDATE bi_alert_config SET last_alert_time = #{lastAlertTime} WHERE id = #{id}
+    </update>
+
+    <delete id="deleteBiAlertRuleById" parameterType="Long">
+        DELETE FROM bi_alert_config WHERE id = #{id}
+    </delete>
+
+    <delete id="deleteBiAlertRuleByIds" parameterType="String">
+        DELETE FROM bi_alert_config WHERE id IN
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+</mapper>

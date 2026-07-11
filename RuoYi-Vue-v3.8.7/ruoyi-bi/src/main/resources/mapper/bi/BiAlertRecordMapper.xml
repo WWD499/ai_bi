@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.bi.mapper.BiAlertRecordMapper">
+
+    <resultMap type="com.ruoyi.bi.domain.BiAlertRecord" id="BiAlertRecordResult">
+        <result property="id"               column="id"                />
+        <result property="ruleId"           column="rule_id"           />
+        <result property="ruleName"         column="rule_name"         />
+        <result property="datasourceId"     column="datasource_id"     />
+        <result property="tableName"        column="table_name"        />
+        <result property="checkSql"         column="check_sql"         />
+        <result property="thresholdValue"   column="threshold_value"   />
+        <result property="actualValue"      column="actual_value"      />
+        <result property="comparisonOperator" column="comparison_operator" />
+        <result property="alertMessage"     column="alert_message"     />
+        <result property="analysisResult"   column="analysis_result"   />
+        <result property="alertLevel"       column="alert_level"       />
+        <result property="alertTime"        column="alert_time"        />
+        <result property="status"           column="status"            />
+        <result property="handledBy"        column="handled_by"        />
+        <result property="handledTime"      column="handled_time"      />
+        <result property="handledRemark"    column="handled_remark"    />
+    </resultMap>
+
+    <sql id="selectBiAlertRecordVo">
+        SELECT id, rule_id, rule_name, datasource_id, table_name, check_sql,
+               threshold_value, actual_value, comparison_operator,
+               alert_message, analysis_result, alert_level, alert_time,
+               status, handled_by, handled_time, handled_remark
+        FROM bi_alert_record
+    </sql>
+
+    <select id="selectBiAlertRecordList" parameterType="com.ruoyi.bi.domain.BiAlertRecord" resultMap="BiAlertRecordResult">
+        <include refid="selectBiAlertRecordVo"/>
+        <where>
+            <if test="ruleId != null">AND rule_id = #{ruleId}</if>
+            <if test="alertLevel != null and alertLevel != ''">AND alert_level = #{alertLevel}</if>
+            <if test="status != null and status != ''">AND status = #{status}</if>
+            <if test="ruleName != null and ruleName != ''">AND rule_name LIKE '%' || #{ruleName} || '%'</if>
+        </where>
+        ORDER BY alert_time DESC
+    </select>
+
+    <select id="selectBiAlertRecordById" parameterType="Long" resultMap="BiAlertRecordResult">
+        <include refid="selectBiAlertRecordVo"/>
+        WHERE id = #{id}
+    </select>
+
+    <select id="countTodayByRuleId" parameterType="Long" resultType="int">
+        SELECT COUNT(*) FROM bi_alert_record
+        WHERE rule_id = #{ruleId}
+          AND alert_time::DATE = CURRENT_DATE
+    </select>
+
+    <select id="countPendingByRuleId" parameterType="Long" resultType="int">
+        SELECT COUNT(*) FROM bi_alert_record
+        WHERE rule_id = #{ruleId}
+          AND status = 'pending'
+    </select>
+
+    <insert id="insertBiAlertRecord" parameterType="com.ruoyi.bi.domain.BiAlertRecord" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO bi_alert_record
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="ruleId != null">rule_id,</if>
+            <if test="ruleName != null and ruleName != ''">rule_name,</if>
+            <if test="datasourceId != null">datasource_id,</if>
+            <if test="tableName != null and tableName != ''">table_name,</if>
+            <if test="checkSql != null and checkSql != ''">check_sql,</if>
+            <if test="thresholdValue != null">threshold_value,</if>
+            <if test="actualValue != null">actual_value,</if>
+            <if test="comparisonOperator != null and comparisonOperator != ''">comparison_operator,</if>
+            <if test="alertMessage != null and alertMessage != ''">alert_message,</if>
+            <if test="analysisResult != null and analysisResult != ''">analysis_result,</if>
+            <if test="alertLevel != null and alertLevel != ''">alert_level,</if>
+            <if test="status != null and status != ''">status,</if>
+            alert_time
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            <if test="ruleId != null">#{ruleId},</if>
+            <if test="ruleName != null and ruleName != ''">#{ruleName},</if>
+            <if test="datasourceId != null">#{datasourceId},</if>
+            <if test="tableName != null and tableName != ''">#{tableName},</if>
+            <if test="checkSql != null and checkSql != ''">#{checkSql},</if>
+            <if test="thresholdValue != null">#{thresholdValue},</if>
+            <if test="actualValue != null">#{actualValue},</if>
+            <if test="comparisonOperator != null and comparisonOperator != ''">#{comparisonOperator},</if>
+            <if test="alertMessage != null and alertMessage != ''">#{alertMessage},</if>
+            <if test="analysisResult != null and analysisResult != ''">#{analysisResult},</if>
+            <if test="alertLevel != null and alertLevel != ''">#{alertLevel},</if>
+            <if test="status != null and status != ''">#{status},</if>
+            <choose>
+                <when test="alertTime != null">#{alertTime},</when>
+                <otherwise>NOW(),</otherwise>
+            </choose>
+        </trim>
+    </insert>
+
+    <update id="updateBiAlertRecord" parameterType="com.ruoyi.bi.domain.BiAlertRecord">
+        UPDATE bi_alert_record
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="status != null and status != ''">status = #{status},</if>
+            <if test="handledBy != null and handledBy != ''">handled_by = #{handledBy},</if>
+            <if test="handledRemark != null and handledRemark != ''">handled_remark = #{handledRemark},</if>
+            <if test="status == 'resolved' or status == 'confirmed'">handled_time = NOW(),</if>
+        </trim>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteBiAlertRecordById" parameterType="Long">
+        DELETE FROM bi_alert_record WHERE id = #{id}
+    </delete>
+
+    <delete id="deleteBiAlertRecordByIds" parameterType="String">
+        DELETE FROM bi_alert_record WHERE id IN
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+</mapper>

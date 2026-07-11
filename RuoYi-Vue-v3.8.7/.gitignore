@@ -1,0 +1,71 @@
+######################################################################
+# Build Tools
+
+.gradle
+/build/
+!gradle/wrapper/gradle-wrapper.jar
+
+target/
+!.mvn/wrapper/maven-wrapper.jar
+
+######################################################################
+# IDE
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+
+### JRebel ###
+rebel.xml
+
+### NetBeans ###
+nbproject/private/
+build/*
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+######################################################################
+# Others
+*.log
+*.xml.versionsBackup
+*.swp
+
+!*/build/*.java
+!*/build/*.html
+!*/build/*.xml
+
+######################################################################
+# === Secrets: NEVER commit real config that contains credentials ===
+# 真实配置文件（含数据库密码 / JWT 密钥）一律忽略，只提交 -example 模板
+ruoyi-admin/src/main/resources/application.yml
+ruoyi-admin/src/main/resources/application-druid.yml
+ruoyi-admin/src/main/resources/application-prod.yml
+ruoyi-admin/src/main/resources/application-dev.yml
+
+# 保留脱敏后的示例模板（可安全入库）
+!ruoyi-admin/src/main/resources/application-example.yml
+!ruoyi-admin/src/main/resources/application-druid-example.yml
+
+# 本地上传目录（Windows / Linux 路径）
+/ruoyi/uploadPath/
+D:/ruoyi/uploadPath/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Environment files (may contain API endpoints / build config) — keep .env.example
+.env.*
+!.env.example

@@ -1,0 +1,157 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.bi.mapper.BiKnowledgeMapper">
+
+    <!-- 结果映射 -->
+    <resultMap type="com.ruoyi.bi.domain.BiKnowledge" id="BiKnowledgeResult">
+        <id     property="id"            column="id"/>
+        <result property="title"         column="title"/>
+        <result property="content"        column="content"/>
+        <result property="sourceType"     column="source_type"/>
+        <result property="sourceUrl"      column="source_url"/>
+        <result property="businessDomain" column="business_domain"/>
+        <result property="tags"           column="tags"/>
+        <result property="chunkIndex"     column="chunk_index"/>
+        <result property="totalChunks"    column="total_chunks"/>
+        <result property="status"         column="status"/>
+        <result property="createBy"       column="create_by"/>
+        <result property="createTime"     column="create_time"/>
+        <result property="updateBy"       column="update_by"/>
+        <result property="updateTime"     column="update_time"/>
+        <result property="remark"         column="remark"/>
+    </resultMap>
+
+    <!-- 新增知识条目 -->
+    <insert id="insertBiKnowledge" parameterType="com.ruoyi.bi.domain.BiKnowledge" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO bi_knowledge (
+            title, content, content_vector, source_type, source_url,
+            business_domain, tags, chunk_index, total_chunks, status,
+            create_by, create_time, update_by, update_time, remark
+        ) VALUES (
+            #{title}, #{content},
+            CAST(#{contentVector} AS vector),
+            #{sourceType}, #{sourceUrl},
+            #{businessDomain}, #{tags}, #{chunkIndex},
+            #{totalChunks}, #{status},
+            #{createBy}, NOW(), #{updateBy}, NOW(), #{remark}
+        )
+    </insert>
+
+    <!-- 批量新增知识条目 -->
+    <insert id="batchInsertBiKnowledge" parameterType="java.util.List">
+        INSERT INTO bi_knowledge (
+            title, content, content_vector, source_type, source_url,
+            business_domain, tags, chunk_index, total_chunks, status,
+            create_by, create_time, remark
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.title}, #{item.content},
+                CAST(#{item.contentVector} AS vector),
+                #{item.sourceType}, #{item.sourceUrl},
+                #{item.businessDomain}, #{item.tags}, #{item.chunkIndex},
+                #{item.totalChunks}, #{item.status},
+                #{item.createBy}, NOW(), #{item.remark}
+            )
+        </foreach>
+    </insert>
+
+    <!-- 根据ID查询 -->
+    <select id="selectBiKnowledgeById" resultMap="BiKnowledgeResult">
+        SELECT * FROM bi_knowledge WHERE id = #{id}
+    </select>
+
+    <!-- 查询列表（带条件） -->
+    <select id="selectBiKnowledgeList" resultMap="BiKnowledgeResult">
+        SELECT * FROM bi_knowledge
+        <where>
+            <if test="title != null and title != ''">
+                AND title LIKE CONCAT('%', #{title}, '%')
+            </if>
+            <if test="sourceType != null and sourceType != ''">
+                AND source_type = #{sourceType}
+            </if>
+            <if test="businessDomain != null and businessDomain != ''">
+                AND business_domain = #{businessDomain}
+            </if>
+            <if test="status != null">
+                AND status = #{status}
+            </if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <!-- 更新知识条目 -->
+    <update id="updateBiKnowledge" parameterType="com.ruoyi.bi.domain.BiKnowledge">
+        UPDATE bi_knowledge
+        <set>
+            <if test="title != null and title != ''">
+                title = #{title},
+            </if>
+            <if test="content != null and content != ''">
+                content = #{content},
+            </if>
+            <if test="contentVector != null and contentVector != ''">
+                content_vector = CAST(#{contentVector} AS vector),
+            </if>
+            <if test="sourceType != null and sourceType != ''">
+                source_type = #{sourceType},
+            </if>
+            <if test="sourceUrl != null">
+                source_url = #{sourceUrl},
+            </if>
+            <if test="businessDomain != null and businessDomain != ''">
+                business_domain = #{businessDomain},
+            </if>
+            <if test="tags != null">
+                tags = #{tags},
+            </if>
+            <if test="status != null">
+                status = #{status},
+            </if>
+            update_by = #{updateBy},
+            update_time = NOW(),
+            <if test="remark != null">
+                remark = #{remark},
+            </if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <!-- 根据ID删除 -->
+    <delete id="deleteBiKnowledgeById">
+        DELETE FROM bi_knowledge WHERE id = #{id}
+    </delete>
+
+    <!-- 批量删除 -->
+    <delete id="deleteBiKnowledgeByIds">
+        DELETE FROM bi_knowledge WHERE id IN
+        <foreach collection="array" item="id" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <!-- 向量相似度检索（pgvector余弦距离） -->
+    <select id="searchByVector" resultMap="BiKnowledgeResult">
+        SELECT *,
+               (content_vector &lt;=&gt; CAST(#{vectorStr} AS vector)) AS similarity
+        FROM bi_knowledge
+        WHERE status = 1
+        <if test="domain != null and domain != ''">
+            AND business_domain = #{domain}
+        </if>
+        ORDER BY content_vector &lt;=&gt; CAST(#{vectorStr} AS vector)
+        LIMIT #{topK}
+    </select>
+
+    <!-- 根据业务领域查询启用的知识条目 -->
+    <select id="selectByDomain" resultMap="BiKnowledgeResult">
+        SELECT * FROM bi_knowledge
+        WHERE status = 1
+        AND business_domain = #{domain}
+        ORDER BY create_time DESC
+    </select>
+
+</mapper>

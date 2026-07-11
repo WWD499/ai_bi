@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.ruoyi.bi.mapper.BiDatasourceMapper">
+
+    <resultMap type="com.ruoyi.bi.domain.BiDatasource" id="BiDatasourceResult">
+        <result property="id"           column="id"            />
+        <result property="name"         column="name"          />
+        <result property="type"         column="type"          />
+        <result property="host"         column="host"          />
+        <result property="port"         column="port"          />
+        <result property="databaseName" column="database_name" />
+        <result property="username"     column="username"      />
+        <result property="password"     column="password"      />
+        <result property="jdbcUrl"      column="jdbc_url"      />
+        <result property="status"       column="status"        />
+        <result property="remark"       column="remark"        />
+        <result property="createTime"   column="create_time"   />
+        <result property="updateTime"   column="update_time"   />
+    </resultMap>
+
+    <sql id="selectBiDatasourceVo">
+        SELECT id, name, type, host, port, database_name, username, password, jdbc_url, status, remark, create_time, update_time
+        FROM bi_datasource
+    </sql>
+
+    <select id="selectBiDatasourceList" parameterType="com.ruoyi.bi.domain.BiDatasource" resultMap="BiDatasourceResult">
+        <include refid="selectBiDatasourceVo"/>
+        <where>
+            <if test="name != null and name != ''">AND name LIKE CONCAT('%', #{name}, '%')</if>
+            <if test="type != null and type != ''">AND type = #{type}</if>
+            <if test="status != null">AND status = #{status}</if>
+        </where>
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectBiDatasourceById" parameterType="Long" resultMap="BiDatasourceResult">
+        <include refid="selectBiDatasourceVo"/>
+        WHERE id = #{id}
+    </select>
+
+    <insert id="insertBiDatasource" parameterType="com.ruoyi.bi.domain.BiDatasource" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO bi_datasource
+        <trim prefix="(" suffix=")" suffixOverrides=",">
+            <if test="name != null and name != ''">name,</if>
+            <if test="type != null and type != ''">type,</if>
+            <if test="host != null and host != ''">host,</if>
+            <if test="port != null">port,</if>
+            <if test="databaseName != null and databaseName != ''">database_name,</if>
+            <if test="username != null and username != ''">username,</if>
+            <if test="password != null and password != ''">password,</if>
+            <if test="jdbcUrl != null and jdbcUrl != ''">jdbc_url,</if>
+            <if test="status != null">status,</if>
+            <if test="remark != null and remark != ''">remark,</if>
+            create_time
+        </trim>
+        <trim prefix="VALUES (" suffix=")" suffixOverrides=",">
+            <if test="name != null and name != ''">#{name},</if>
+            <if test="type != null and type != ''">#{type},</if>
+            <if test="host != null and host != ''">#{host},</if>
+            <if test="port != null">#{port},</if>
+            <if test="databaseName != null and databaseName != ''">#{databaseName},</if>
+            <if test="username != null and username != ''">#{username},</if>
+            <if test="password != null and password != ''">#{password},</if>
+            <if test="jdbcUrl != null and jdbcUrl != ''">#{jdbcUrl},</if>
+            <if test="status != null">#{status},</if>
+            <if test="remark != null and remark != ''">#{remark},</if>
+            NOW()
+        </trim>
+    </insert>
+
+    <update id="updateBiDatasource" parameterType="com.ruoyi.bi.domain.BiDatasource">
+        UPDATE bi_datasource
+        <trim prefix="SET" suffixOverrides=",">
+            <if test="name != null and name != ''">name = #{name},</if>
+            <if test="type != null and type != ''">type = #{type},</if>
+            <if test="host != null and host != ''">host = #{host},</if>
+            <if test="port != null">port = #{port},</if>
+            <if test="databaseName != null">database_name = #{databaseName},</if>
+            <if test="username != null">username = #{username},</if>
+            <if test="password != null">password = #{password},</if>
+            <if test="jdbcUrl != null">jdbc_url = #{jdbcUrl},</if>
+            <if test="status != null">status = #{status},</if>
+            <if test="remark != null">remark = #{remark},</if>
+            update_time = NOW()
+        </trim>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteBiDatasourceById" parameterType="Long">
+        DELETE FROM bi_datasource WHERE id = #{id}
+    </delete>
+
+    <delete id="deleteBiDatasourceByIds" parameterType="Long[]">
+        DELETE FROM bi_datasource WHERE id IN
+        <foreach item="id" collection="array" open="(" separator="," close=")">
+            #{id}
+        </foreach>
+    </delete>
+
+    <select id="selectByStatus" resultType="com.ruoyi.bi.domain.BiDatasource">
+        SELECT * FROM bi_datasource
+        WHERE status = #{status}
+        ORDER BY create_time DESC
+    </select>
+
+    <select id="selectByType" resultType="com.ruoyi.bi.domain.BiDatasource">
+        SELECT * FROM bi_datasource
+        WHERE type = #{type}
+        ORDER BY create_time DESC
+    </select>
+
+</mapper>
