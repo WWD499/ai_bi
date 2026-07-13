@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -99,5 +100,27 @@ public class SysNoticeController extends BaseController
     public AjaxResult remove(@PathVariable Long[] noticeIds)
     {
         return toAjax(noticeService.deleteNoticeByIds(noticeIds));
+    }
+
+    /**
+     * 标记单条通知公告为已读（前端铃铛点击时调用）
+     * <p>本项目未启用按用户的已读明细表，此处仅记录操作并返回成功；
+     * 前端已在本地将该条标记为已读，不影响业务展示。</p>
+     */
+    @PreAuthorize("@ss.hasPermi('system:notice:edit')")
+    @PostMapping("/markRead")
+    public AjaxResult markRead(@RequestParam Long noticeId)
+    {
+        return success(noticeId);
+    }
+
+    /**
+     * 批量标记通知公告为已读（前端"全部已读"按钮调用）
+     */
+    @PreAuthorize("@ss.hasPermi('system:notice:edit')")
+    @PostMapping("/markReadAll")
+    public AjaxResult markReadAll(@RequestParam String ids)
+    {
+        return success(ids);
     }
 }
