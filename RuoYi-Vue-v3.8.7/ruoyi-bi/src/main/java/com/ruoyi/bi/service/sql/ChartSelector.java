@@ -79,7 +79,9 @@ public class ChartSelector {
         // ---- 用户意图优先（最高优先级） ----
 
         // 意图A：占比/比例/分布 → 饼图
-        if (isProportionIntent(userQuery) && !firstColNumeric && rowCount <= 10) {
+        // 注意：上限放宽到31，覆盖「每月(12行)/每天(31行)」等时间维度占比，
+        // 否则时间序列表征会被 rowCount<=10 误杀、降级成折线图。
+        if (isProportionIntent(userQuery) && !firstColNumeric && rowCount <= 31) {
             if (hasAnyNumericColumn(columns, data, 1)) {
                 log.info("选图：饼图（用户意图：占比/比例/分布）");
                 return ChartType.PIE;
