@@ -145,15 +145,17 @@ ocr:
   # 识别超时时间（毫秒，默认 120000 = 120秒，PaddleOCR 首次加载模型较慢）
   timeout-ms: 120000
 
-# AI大模型配置（火山方舟Ark API）
+# AI大模型配置（兼容OpenAI协议的统一AI网关）
 ai:
   ark:
-    # Ark API base URL
-    base-url: https://ark.cn-beijing.volces.com/api/v3
-    # Ark API Key（从环境变量 ARK_API_KEY 读取，留空则 AI 功能禁用）
+    # AI网关 base URL（OpenAI 兼容，/v1 后缀）
+    base-url: https://ai-api-prod.qingjiao.art/v1
+    # AI网关 API Key（从环境变量 ARK_API_KEY 读取，留空则 AI 功能禁用；切勿提交真实密钥）
     api-key: ${ARK_API_KEY:}
-    # 对话模型（DeepSeek V4 Flash，用于NL2SQL和数据解读）
-    model: deepseek-v4-flash-260425
+    # 对话模型（deepseek-v3，用于NL2SQL和数据解读）
+    model: deepseek-v3
+    # 向量化模型（BAAI/bge-m3，输出1024维，与 vector(1024) 列一致；若换 Qwen/Qwen3-Embedding-8B 等需同步改库表维度）
+    embedding-model: BAAI/bge-m3
     # 调用超时（毫秒）
     timeout-ms: 30000
 

@@ -23,11 +23,11 @@ import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
 /**
- * 大模型调用服务（兼容火山方舟Ark API）
+ * 大模型调用服务（兼容 OpenAI 协议的统一 AI 网关）
  *
- * 直接通过HTTP REST调用Ark API Chat Completions端点
- * 不依赖OpenAI Java SDK，避免版本兼容问题
- * 支持DeepSeek-V4-Flash等模型
+ * 直接通过 HTTP REST 调用网关的 Chat Completions / Embeddings 端点
+ * 不依赖 OpenAI Java SDK，避免版本兼容问题
+ * 支持 deepseek-v3、deepseek-r1、qwen 系列及 BAAI/bge-m3 等模型
  *
  * @author ruoyi-bi
  */
@@ -206,7 +206,7 @@ public class LlmService {
         try {
             ResponseEntity<String> response = restTemplate.postForEntity(url, entity, String.class);
             if (response.getStatusCode() != HttpStatus.OK) {
-                throw new ServiceException("Ark API返回错误码：" + response.getStatusCode());
+                throw new ServiceException("AI网关返回错误码：" + response.getStatusCode());
             }
             return response.getBody();
         } catch (HttpClientErrorException | HttpServerErrorException e) {
@@ -215,7 +215,7 @@ public class LlmService {
         } catch (ResourceAccessException e) {
             throw new ServiceException("网络连接超时，请检查网络后重试");
         } catch (RestClientException e) {
-            throw new ServiceException("Ark API调用失败：" + e.getMessage());
+            throw new ServiceException("AI网关调用失败：" + e.getMessage());
         }
     }
 

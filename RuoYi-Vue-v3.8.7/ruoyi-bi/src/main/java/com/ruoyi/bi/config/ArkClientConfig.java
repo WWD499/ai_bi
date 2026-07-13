@@ -6,10 +6,10 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * 火山方舟Ark API配置
+ * AI 大模型 API 配置（兼容 OpenAI 协议的统一 AI 网关）
  *
- * 直接通过HTTP REST调用Ark API（Chat Completions格式）
- * 不依赖OpenAI Java SDK，避免版本兼容问题
+ * 直接通过 HTTP REST 调用网关的 Chat Completions / Embeddings 端点
+ * 不依赖 OpenAI Java SDK，避免版本兼容问题
  *
  * @author ruoyi-bi
  */
@@ -18,16 +18,16 @@ public class ArkClientConfig {
 
     private static final Logger log = LoggerFactory.getLogger(ArkClientConfig.class);
 
-    @Value("${ai.ark.base-url:https://ark.cn-beijing.volces.com/api/v3}")
+    @Value("${ai.ark.base-url:https://ai-api-prod.qingjiao.art/v1}")
     private String baseUrl;
 
     @Value("${ai.ark.api-key:${ARK_API_KEY:}}")
     private String apiKey;
 
-    @Value("${ai.ark.model:deepseek-v4-flash-260425}")
+    @Value("${ai.ark.model:deepseek-v3}")
     private String model;
 
-    @Value("${ai.ark.embedding-model:bge-m3}")
+    @Value("${ai.ark.embedding-model:BAAI/bge-m3}")
     private String embeddingModel;
 
     @Value("${ai.ark.timeout-ms:30000}")
