@@ -69,11 +69,3 @@ export function markNoticeReadAll(ids) {
   })
 }
 
-// 查询公告已读用户列表
-export function listNoticeReadUsers(query) {
-  return request({
-    url: '/system/notice/readUsers/list',
-    method: 'get',
-    params: query
-  })
-}

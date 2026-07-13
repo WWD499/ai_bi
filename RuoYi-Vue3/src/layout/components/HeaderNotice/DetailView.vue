@@ -228,6 +228,16 @@ defineExpose({
   line-height: 1.85;
   color: var(--notice-content-color, #2d3748);
   word-break: break-word;
+  overflow: visible !important;
+  max-width: 100% !important;
+  width: auto !important;
+  height: auto !important;
+  min-height: 0 !important;
+  display: block !important;
+  position: static !important;
+  clip: auto !important;
+  text-indent: 0 !important;
+  white-space: normal !important;
 }
 
 .notice-content :deep(p) { margin: 0 0 1em; }
