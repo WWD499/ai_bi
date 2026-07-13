@@ -51,3 +51,20 @@ export function testDatasource(data) {
     data: data
   })
 }
+
+// 获取数据源当前库的表列表（预警规则级联选择）
+export function listTables(id) {
+  return request({
+    url: '/bi/datasource/' + id + '/tables',
+    method: 'get'
+  })
+}
+
+// 获取指定表的字段列表（预警规则级联选择）
+export function listColumns(id, table) {
+  return request({
+    url: '/bi/datasource/' + id + '/columns',
+    method: 'get',
+    params: { table }
+  })
+}

@@ -78,6 +78,12 @@
               </el-tag>
             </template>
           </el-table-column>
+          <el-table-column label="通知" width="80" align="center">
+            <template #default="scope">
+              <el-tag v-if="scope.row.notifyType && scope.row.notifyType.includes('email')" type="warning" size="small">邮件</el-tag>
+              <span v-else style="color:#c0c4cc">-</span>
+            </template>
+          </el-table-column>
           <el-table-column label="状态" width="70" align="center">
             <template #default="scope">
               <el-switch v-model="scope.row.status" :active-value="1" :inactive-value="0"
@@ -167,10 +173,18 @@
           </el-select>
         </el-form-item>
         <el-form-item label="监控表" prop="tableName">
-          <el-input v-model="form.tableName" placeholder="请输入表名" maxlength="100" />
+          <el-select v-model="form.tableName" placeholder="请先选择数据源" :loading="tableLoading"
+            :disabled="!form.datasourceId" filterable clearable style="width:100%"
+            @change="onTableChange">
+            <el-option v-for="t in tableOptions" :key="t.value" :label="t.label" :value="t.value" />
+          </el-select>
         </el-form-item>
         <el-form-item label="监控字段" prop="metricField">
-          <el-input v-model="form.metricField" placeholder="如：total_amount（可选）" maxlength="100" />
+          <el-select v-model="form.metricField" placeholder="请先选择监控表" :loading="columnLoading"
+            :disabled="!form.tableName" filterable clearable style="width:100%">
+            <el-option v-for="c in columnOptions" :key="c.value" :label="c.label" :value="c.value" />
+          </el-select>
+          <span style="font-size:12px;color:#999">可选：用于展示与明细下钻</span>
         </el-form-item>
         <el-form-item label="检查SQL" prop="conditionSql">
           <el-input v-model="form.conditionSql" type="textarea" :rows="3" placeholder="如：SELECT SUM(total_amount) FROM demo_order" />
@@ -213,6 +227,14 @@
             <el-radio :value="0">停用</el-radio>
           </el-radio-group>
         </el-form-item>
+        <el-divider content-position="left">通知方式</el-divider>
+        <el-form-item label="邮件通知">
+          <el-switch v-model="form.emailNotify" :active-value="true" :inactive-value="false" @change="onEmailToggle" />
+          <span style="margin-left:8px;font-size:12px;color:#999">开启后，越界时向指定邮箱发送预警邮件</span>
+        </el-form-item>
+        <el-form-item label="通知邮箱" prop="notifyTarget" v-if="form.emailNotify">
+          <el-input v-model="form.notifyTarget" placeholder="如：admin@example.com" style="max-width:320px" />
+        </el-form-item>
         <el-form-item label="备注">
           <el-input v-model="form.remark" type="textarea" :rows="2" placeholder="可选" />
         </el-form-item>
@@ -248,7 +270,7 @@
 
 <script setup name="BiAlert">
 import { listAlertRule, getAlertRule, addAlertRule, updateAlertRule, delAlertRule, listAlertRecord, getAlertRecord, handleAlertRecord, manualCheck, alertStats } from '@/api/bi/alert'
-import { listDatasource } from '@/api/bi/datasource'
+import { listDatasource, listTables, listColumns } from '@/api/bi/datasource'
 
 const { proxy } = getCurrentInstance()
 
@@ -274,6 +296,10 @@ const dialogVisible = ref(false)
 const dialogTitle = ref('')
 const submitting = ref(false)
 const datasourceOptions = ref([])
+const tableOptions = ref([])
+const columnOptions = ref([])
+const tableLoading = ref(false)
+const columnLoading = ref(false)
 
 const data = reactive({
   form: {},
@@ -284,7 +310,17 @@ const data = reactive({
     tableName: [{ required: true, message: '请输入监控表名', trigger: 'blur' }],
     conditionSql: [{ required: true, message: '请输入检查SQL', trigger: 'blur' }],
     comparisonOperator: [{ required: true, message: '请选择运算符', trigger: 'change' }],
-    thresholdValue: [{ required: true, message: '请输入阈值', trigger: 'blur' }]
+    thresholdValue: [{ required: true, message: '请输入阈值', trigger: 'blur' }],
+    notifyTarget: [{
+      validator: (rule, value, callback) => {
+        if (!form.value.emailNotify) return callback()
+        if (!value || !/^[\w.+-]+@[\w-]+(\.[\w-]+)+$/.test(value)) {
+          return callback(new Error('请输入有效的邮箱地址'))
+        }
+        callback()
+      },
+      trigger: 'blur'
+    }]
   }
 })
 const { queryParams, form, rules } = toRefs(data)
@@ -321,6 +357,12 @@ function handleAdd() {
   form.value.status = 1
   form.value.analysisEnabled = 1
   form.value.checkInterval = 60
+  form.value.emailNotify = false
+  form.value.notifyTarget = ''
+  form.value.tableName = ''
+  form.value.metricField = ''
+  tableOptions.value = []
+  columnOptions.value = []
 }
 
 function handleUpdate(row) {
@@ -329,6 +371,16 @@ function handleUpdate(row) {
   getAlertRule(row.id).then(response => {
     form.value = response.data
     dialogVisible.value = true
+    // 邮件开关由 notifyType 反推
+    form.value.emailNotify = !!(form.value.notifyType && form.value.notifyType.includes('email'))
+    // 回填级联下拉：先加载表，再加载字段
+    if (form.value.datasourceId) {
+      loadTables(form.value.datasourceId).then(() => {
+        if (form.value.tableName) {
+          loadColumns(form.value.datasourceId, form.value.tableName)
+        }
+      })
+    }
   })
 }
 
@@ -337,18 +389,77 @@ function resetForm() {
   formRef.value?.resetFields()
 }
 
+// 加载数据源下的表（供“监控表”下拉）
+function loadTables(datasourceId) {
+  tableOptions.value = []
+  if (!datasourceId) return Promise.resolve([])
+  tableLoading.value = true
+  return listTables(datasourceId).then(res => {
+    tableOptions.value = (res.data || []).map(t => ({
+      value: t.tableName,
+      label: t.remarks ? t.tableName + '（' + t.remarks + '）' : t.tableName
+    }))
+    return tableOptions.value
+  }).catch(() => {
+    return []
+  }).finally(() => {
+    tableLoading.value = false
+  })
+}
+
+// 加载指定表的字段（供“监控字段”下拉）
+function loadColumns(datasourceId, tableName) {
+  columnOptions.value = []
+  if (!datasourceId || !tableName) return Promise.resolve([])
+  columnLoading.value = true
+  return listColumns(datasourceId, tableName).then(res => {
+    columnOptions.value = (res.data || []).map(c => ({
+      value: c.columnName,
+      label: c.columnName + '（' + c.dataType + '）'
+    }))
+    return columnOptions.value
+  }).catch(() => {
+    return []
+  }).finally(() => {
+    columnLoading.value = false
+  })
+}
+
+function onDatasourceChange() {
+  form.value.tableName = ''
+  form.value.metricField = ''
+  columnOptions.value = []
+  loadTables(form.value.datasourceId)
+}
+
+function onTableChange() {
+  form.value.metricField = ''
+  loadColumns(form.value.datasourceId, form.value.tableName)
+}
+
+function onEmailToggle(val) {
+  if (!val) {
+    form.value.notifyTarget = ''
+  }
+}
+
 function submitForm() {
   formRef.value.validate(valid => {
     if (!valid) return
     submitting.value = true
-    if (form.value.id != null) {
-      updateAlertRule(form.value).then(() => {
+    // 由邮件开关推导 notifyType，并清理无效邮箱
+    const payload = { ...form.value }
+    payload.notifyType = payload.emailNotify ? 'email' : ''
+    if (!payload.emailNotify) payload.notifyTarget = ''
+    delete payload.emailNotify
+    if (payload.id != null) {
+      updateAlertRule(payload).then(() => {
         proxy.$modal.msgSuccess('修改成功')
         dialogVisible.value = false
         getList()
       }).finally(() => submitting.value = false)
     } else {
-      addAlertRule(form.value).then(() => {
+      addAlertRule(payload).then(() => {
         proxy.$modal.msgSuccess('新增成功')
         dialogVisible.value = false
         getList()
@@ -371,8 +482,6 @@ function handleStatusChange(row) {
     proxy.$modal.msgSuccess('状态更新成功')
   })
 }
-
-function onDatasourceChange() { /* 可选：加载表结构 */ }
 
 function handleManualCheck() {
   proxy.$modal.confirm('将立即扫描所有启用的预警规则，该操作可能需要一些时间，确认继续？').then(() => {

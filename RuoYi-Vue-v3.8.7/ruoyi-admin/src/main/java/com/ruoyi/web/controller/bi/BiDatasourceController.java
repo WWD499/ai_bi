@@ -93,4 +93,24 @@ public class BiDatasourceController extends BaseController {
         boolean result = datasourceService.testConnection(datasource);
         return result ? success("连接成功") : error("连接失败");
     }
+
+    /**
+     * 获取数据源当前库的所有表（供预警规则表单级联选择）
+     */
+    @PreAuthorize("@ss.hasPermi('bi:datasource:list')")
+    @ApiOperation("获取数据源表列表")
+    @GetMapping("/{id}/tables")
+    public AjaxResult listTables(@PathVariable("id") Long id) {
+        return success(datasourceService.listTables(id));
+    }
+
+    /**
+     * 获取指定表的所有字段（供预警规则表单级联选择）
+     */
+    @PreAuthorize("@ss.hasPermi('bi:datasource:list')")
+    @ApiOperation("获取表字段列表")
+    @GetMapping("/{id}/columns")
+    public AjaxResult listColumns(@PathVariable("id") Long id, @RequestParam("table") String table) {
+        return success(datasourceService.listColumns(id, table));
+    }
 }

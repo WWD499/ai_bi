@@ -1,6 +1,8 @@
 package com.ruoyi.bi.service;
 
 import com.ruoyi.bi.domain.BiDatasource;
+import com.ruoyi.bi.vo.DbTableVo;
+import com.ruoyi.bi.vo.DbColumnVo;
 import java.util.List;
 
 /**
@@ -65,4 +67,21 @@ public interface IBiDatasourceService {
      * @return 是否连接成功
      */
     boolean testConnection(BiDatasource datasource);
+
+    /**
+     * 列出数据源当前库中的所有表（供预警规则表单级联选择）
+     *
+     * @param datasourceId 数据源ID
+     * @return 表信息列表
+     */
+    List<DbTableVo> listTables(Long datasourceId);
+
+    /**
+     * 列出指定表的所有字段（供预警规则表单级联选择）
+     *
+     * @param datasourceId 数据源ID
+     * @param tableName     表名（做白名单校验，非法标识符直接返回空）
+     * @return 字段信息列表
+     */
+    List<DbColumnVo> listColumns(Long datasourceId, String tableName);
 }
