@@ -30,6 +30,12 @@
             <artifactId>ruoyi-system</artifactId>
         </dependency>
 
+        <!-- 邮件通知（BI数据预警邮件通道，JavaMailSender 自动配置） -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-mail</artifactId>
+        </dependency>
+
         <!-- Spring Retry（大模型调用重试机制） -->
         <dependency>
             <groupId>org.springframework.retry</groupId>
