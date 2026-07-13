@@ -94,18 +94,27 @@ public class BiAlertNotifyServiceImpl implements IBiAlertNotifyService {
 
     private String buildContent(BiAlertRule rule, BiAlertRecord record) {
         StringBuilder sb = new StringBuilder();
-        sb.append("预警规则：").append(record.getRuleName()).append("\n");
-        sb.append("监控表：").append(record.getTableName()).append("\n");
-        sb.append("触发消息：").append(record.getAlertMessage()).append("\n");
-        sb.append("实际值：").append(record.getActualValue())
-                .append("，阈值：").append(record.getThresholdValue())
-                .append(" ").append(record.getComparisonOperator()).append("\n");
+        sb.append("<div style=\"font-family:system-ui,-apple-system,sans-serif;line-height:1.8;color:#2d3748;\">");
+        sb.append("<p style=\"margin:0 0 8px;\"><b>预警规则：</b>").append(escapeHtml(record.getRuleName())).append("</p>");
+        sb.append("<p style=\"margin:0 0 8px;\"><b>监控表：</b>").append(escapeHtml(record.getTableName())).append("</p>");
+        sb.append("<p style=\"margin:0 0 8px;\"><b>触发消息：</b>").append(escapeHtml(record.getAlertMessage())).append("</p>");
+        sb.append("<p style=\"margin:0 0 8px;\"><b>实际值：</b>")
+                .append(record.getActualValue())
+                .append("，<b>阈值：</b>").append(record.getThresholdValue())
+                .append(" ").append(escapeHtml(record.getComparisonOperator())).append("</p>");
         if (StringUtils.isNotBlank(record.getAnalysisResult())) {
-            sb.append("\n【AI分析】\n").append(record.getAnalysisResult());
+            sb.append("<div style=\"margin:12px 0;padding:12px 16px;background:#f7fafc;border-radius:6px;border-left:3px solid #d97706;\">");
+            sb.append("<b style=\"display:block;margin-bottom:6px;color:#b7791f;\">AI 分析结果</b>");
+            sb.append("<pre style=\"margin:0;font-family:inherit;font-size:13px;white-space:pre-wrap;word-break:break-word;color:#2d3748;\">")
+                    .append(escapeHtml(record.getAnalysisResult()))
+                    .append("</pre></div>");
         }
-        sb.append("\n\n（请前往「BI数据分析 → 数据预警 → 预警记录」处理）");
+        sb.append("<p style=\"margin:16px 0 0;color:#718096;font-size:12px;\">")
+                .append("请前往「BI数据分析 → 数据预警 → 预警记录」处理</p>");
+        sb.append("</div>");
         return sb.toString();
     }
+
 
     /**
      * 邮件通知（可选通道）
