@@ -61,6 +61,19 @@ public interface BiKnowledgeMapper {
                                      @Param("domain") String domain);
 
     /**
+     * 关键词兜底检索（无 embedding 模型时可用）
+     * 使用 ILIKE 子串匹配，多个关键词以 OR 组合
+     *
+     * @param terms  从查询中提取的关键词列表
+     * @param topK   返回最相关的K条
+     * @param domain 业务领域过滤（可选，传null不过滤）
+     * @return 命中关键词的知识条目列表
+     */
+    List<BiKnowledge> searchByKeyword(@Param("terms") List<String> terms,
+                                      @Param("topK") int topK,
+                                      @Param("domain") String domain);
+
+    /**
      * 根据业务领域查询启用的知识条目（用于RAG上下文注入）
      */
     List<BiKnowledge> selectByDomain(@Param("domain") String domain);

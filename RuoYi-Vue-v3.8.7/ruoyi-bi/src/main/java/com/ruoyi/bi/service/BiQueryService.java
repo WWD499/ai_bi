@@ -3,6 +3,7 @@ package com.ruoyi.bi.service;
 import com.alibaba.fastjson2.JSONArray;
 import com.alibaba.fastjson2.JSONObject;
 import com.ruoyi.bi.domain.BiDatasource;
+import com.ruoyi.bi.service.IBiKnowledgeService;
 import com.ruoyi.bi.service.llm.LlmService;
 import com.ruoyi.bi.service.llm.PromptBuilder;
 import com.ruoyi.bi.service.sql.ChartSelector;
@@ -50,6 +51,9 @@ public class BiQueryService {
     private IBiDatasourceService datasourceService;
 
     @Autowired
+    private IBiKnowledgeService knowledgeService;
+
+    @Autowired
     private BiDataSourceFactory dataSourceFactory;
 
     /**
@@ -74,8 +78,9 @@ public class BiQueryService {
         String allTableSchemas = getAllTableSchemas(datasource, availableTables);
         log.info("可用表名：{}", availableTables);
 
-        // 3. 构建NL2SQL Prompt（直接注入所有表结构，不依赖RAG）
-        String prompt = promptBuilder.buildNl2SqlPrompt(userQuery, tableName, allTableSchemas, null);
+        // 3. 构建NL2SQL Prompt（注入RAG业务知识库上下文；无embedding时自动关键词兜底检索）
+        String ragContext = knowledgeService.buildRagContext(userQuery, null);
+        String prompt = promptBuilder.buildNl2SqlPrompt(userQuery, tableName, allTableSchemas, ragContext);
 
         // 4. 调用LLM生成SQL
         String rawSql = llmService.chat(prompt, 0.1);

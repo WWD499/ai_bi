@@ -146,6 +146,22 @@
         LIMIT #{topK}
     </select>
 
+    <!-- 关键词兜底检索（无 embedding 模型时可用，ILIKE 子串匹配） -->
+    <select id="searchByKeyword" resultMap="BiKnowledgeResult">
+        SELECT * FROM bi_knowledge
+        WHERE status = 1
+        <if test="domain != null and domain != ''">
+            AND business_domain = #{domain}
+        </if>
+        AND (
+        <foreach collection="terms" item="t" open="(" close=")" separator=" OR ">
+            content ILIKE CONCAT('%', #{t}, '%')
+        </foreach>
+        )
+        ORDER BY id
+        LIMIT #{topK}
+    </select>
+
     <!-- 根据业务领域查询启用的知识条目 -->
     <select id="selectByDomain" resultMap="BiKnowledgeResult">
         SELECT * FROM bi_knowledge

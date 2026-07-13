@@ -14,8 +14,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 /**
  * RAG知识库服务实现
@@ -39,6 +42,19 @@ public class BiKnowledgeServiceImpl implements IBiKnowledgeService {
     private static final int CHUNK_SIZE = 500;      // 每段最大字数
     private static final int CHUNK_OVERLAP = 50;   // 重叠字数
     private static final int EMBED_BATCH_SIZE = 16; // 每次向量化批量大小
+
+    /**
+     * 中文停用词（用于关键词兜底检索时过滤噪声）
+     * 含多字词，提取时按长度降序优先匹配，避免 "本月" 被 "月" 误留
+     */
+    private static final Set<String> STOP_WORDS = new HashSet<>(Arrays.asList(
+            "的", "了", "吗", "呢", "吧", "啊", "是", "在", "我", "你", "他", "她", "它",
+            "我们", "你们", "它们", "查询", "统计", "显示", "列出", "各个", "每个", "所有",
+            "一共", "总共", "多少", "几个", "什么", "怎么", "如何", "哪些", "这个", "那个",
+            "上月", "本月", "上个月", "去年", "今年", "时间", "日期", "数据",
+            "信息", "情况", "分析", "一下", "请", "帮我", "想", "知道", "没有", "和",
+            "与", "及", "或", "之", "等", "一个", "一条", "分别", "对比", "趋势", "变化"
+    ));
 
     @Autowired
     private BiKnowledgeMapper knowledgeMapper;
@@ -166,23 +182,22 @@ public class BiKnowledgeServiceImpl implements IBiKnowledgeService {
             return new ArrayList<>();
         }
 
-        // 如果向量化未启用或不可用，返回空列表（调用方会跳过 RAG 上下文）
-        if (!embeddingEnabled || llmService == null) {
-            log.debug("向量化未启用，跳过相似度检索");
-            return new ArrayList<>();
+        // 1. 优先语义向量检索（embedding 模型可用时）
+        if (embeddingEnabled && llmService != null) {
+            try {
+                List<float[]> queryEmbedding = embedTexts(Collections.singletonList(query.trim()));
+                String vectorStr = floatArrayToPgVector(queryEmbedding.get(0));
+                List<BiKnowledge> vectorResults = knowledgeMapper.searchByVector(vectorStr, topK, domain);
+                if (vectorResults != null && !vectorResults.isEmpty()) {
+                    return vectorResults;
+                }
+            } catch (Exception e) {
+                log.warn("向量相似度检索失败，转关键词兜底：{}", e.getMessage());
+            }
         }
 
-        try {
-            // 1. 将查询文本向量化
-            List<float[]> queryEmbedding = embedTexts(Collections.singletonList(query.trim()));
-            String vectorStr = floatArrayToPgVector(queryEmbedding.get(0));
-
-            // 2. 向量相似度检索（pgvector <=> 余弦距离）
-            return knowledgeMapper.searchByVector(vectorStr, topK, domain);
-        } catch (Exception e) {
-            log.warn("向量相似度检索失败：{}", e.getMessage());
-            return new ArrayList<>();
-        }
+        // 2. 无向量 / 向量检索为空 → 关键词兜底检索（不依赖 embedding 模型）
+        return keywordSearch(query, topK, domain);
     }
 
     @Override
@@ -206,6 +221,65 @@ public class BiKnowledgeServiceImpl implements IBiKnowledgeService {
         context.append("\n");
 
         return context.toString();
+    }
+
+    // =====================================================
+    // 关键词兜底检索（不依赖 embedding 模型）
+    // =====================================================
+
+    /**
+     * 关键词兜底检索（无 embedding 模型时可用）
+     * 从查询中提取业务关键词，使用 PostgreSQL ILIKE 做子串匹配
+     */
+    private List<BiKnowledge> keywordSearch(String query, int topK, String domain) {
+        List<String> terms = extractKeywords(query);
+        if (terms.isEmpty()) {
+            return new ArrayList<>();
+        }
+        try {
+            return knowledgeMapper.searchByKeyword(terms, topK, domain);
+        } catch (Exception e) {
+            log.warn("关键词检索失败：{}", e.getMessage());
+            return new ArrayList<>();
+        }
+    }
+
+    /**
+     * 从自然语言查询中提取检索关键词
+     * 策略：去除停用词（含多字词，按长度降序优先匹配）+ 去除标点空白，
+     * 剩余片段作为关键词；中文长串按 2-gram 滑动切分（中文无空格，避免整串 ILIKE 匹配不到），
+     * 英文/数字片段整体保留，最终过滤长度 < 2 的噪声
+     */
+    List<String> extractKeywords(String query) {
+        if (query == null) {
+            return new ArrayList<>();
+        }
+        // 去除标点符号与空白
+        String text = query.replaceAll("[\\p{P}\\s]+", "");
+        // 去除停用词（按长度降序，优先匹配多字词，避免 "本月" 被 "月" 误留）
+        List<String> words = new ArrayList<>(STOP_WORDS);
+        words.sort((a, b) -> b.length() - a.length());
+        for (String w : words) {
+            if (!w.isEmpty()) {
+                text = text.replace(w, " ");
+            }
+        }
+        // 剩余片段作为关键词；中文长串按 2-gram 滑动切分，提升 ILIKE 子串召回
+        List<String> terms = new ArrayList<>();
+        for (String frag : text.split("\\s+")) {
+            frag = frag.trim();
+            if (frag.isEmpty()) {
+                continue;
+            }
+            if (frag.length() <= 2 || !frag.matches("^[\\p{IsHan}]+$")) {
+                terms.add(frag);
+            } else {
+                for (int i = 0; i + 2 <= frag.length(); i++) {
+                    terms.add(frag.substring(i, i + 2));
+                }
+            }
+        }
+        return terms;
     }
 
     // =====================================================
